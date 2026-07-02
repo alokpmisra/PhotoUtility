@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Passport Photo Converter</title>
+<meta name="description" content="Take a photo with your phone camera and convert it to passport, visa, or print photo sizes." />
+<meta name="theme-color" content="#4f46e5" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Photo Converter" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<header class="app-header">
+  <h1>Passport &amp; ID Photo Converter</h1>
+  <p class="subtitle">Capture, crop, and export photos to passport &amp; print specifications</p>
+</header>
+
+<main id="app">
+
+  <!-- Step 1: Start -->
+  <section id="screen-start" class="screen active" aria-labelledby="start-heading">
+    <h2 id="start-heading" class="sr-only">Get started</h2>
+    <div class="start-actions">
+      <button id="btn-open-camera" class="btn btn-primary" type="button">
+        <span class="icon">📷</span> Use Camera
+      </button>
+      <button id="btn-open-file" class="btn btn-secondary" type="button">
+        <span class="icon">🖼️</span> Upload Photo
+      </button>
+      <input id="file-input" type="file" accept="image/*" capture="user" hidden />
+    </div>
+    <p class="hint">Works offline once installed. Camera requires a secure (HTTPS) connection.</p>
+  </section>
+
+  <!-- Step 2: Camera capture -->
+  <section id="screen-camera" class="screen" aria-labelledby="camera-heading">
+    <h2 id="camera-heading" class="sr-only">Camera</h2>
+    <div class="camera-wrap">
+      <video id="camera-video" playsinline autoplay muted></video>
+      <div class="camera-face-guide" aria-hidden="true"></div>
+    </div>
+    <div class="toolbar">
+      <button id="btn-camera-switch" class="btn btn-secondary" type="button" title="Switch camera">🔄</button>
+      <button id="btn-camera-capture" class="btn btn-primary btn-capture" type="button">Capture</button>
+      <button id="btn-camera-cancel" class="btn btn-ghost" type="button">Cancel</button>
+    </div>
+  </section>
+
+  <!-- Step 3: Crop -->
+  <section id="screen-crop" class="screen" aria-labelledby="crop-heading">
+    <h2 id="crop-heading" class="sr-only">Crop</h2>
+
+    <div class="field">
+      <label for="spec-select">Photo size / specification</label>
+      <select id="spec-select"></select>
+    </div>
+
+    <div id="custom-size-fields" class="custom-size-fields" hidden>
+      <div class="field field-inline">
+        <label for="custom-width">Width</label>
+        <input id="custom-width" type="number" min="1" step="0.1" value="35" />
+      </div>
+      <div class="field field-inline">
+        <label for="custom-height">Height</label>
+        <input id="custom-height" type="number" min="1" step="0.1" value="45" />
+      </div>
+      <div class="field field-inline">
+        <label for="custom-unit">Unit</label>
+        <select id="custom-unit">
+          <option value="mm">mm</option>
+          <option value="in">inches</option>
+          <option value="px">pixels</option>
+        </select>
+      </div>
+      <div class="field field-inline">
+        <label for="custom-dpi">DPI</label>
+        <input id="custom-dpi" type="number" min="72" max="1200" step="1" value="300" />
+      </div>
+    </div>
+
+    <p id="spec-info" class="spec-info"></p>
+
+    <div class="cropper-wrap">
+      <canvas id="crop-canvas"></canvas>
+      <div id="head-guide" class="head-guide" aria-hidden="true"></div>
+    </div>
+
+    <div class="field">
+      <label for="zoom-range">Zoom</label>
+      <input id="zoom-range" type="range" min="1" max="4" step="0.01" value="1" />
+    </div>
+
+    <div class="toolbar">
+      <button id="btn-crop-back" class="btn btn-ghost" type="button">Back</button>
+      <button id="btn-crop-next" class="btn btn-primary" type="button">Continue</button>
+    </div>
+  </section>
+
+  <!-- Step 4: Export -->
+  <section id="screen-export" class="screen" aria-labelledby="export-heading">
+    <h2 id="export-heading" class="sr-only">Export</h2>
+
+    <div class="export-preview-wrap">
+      <canvas id="export-canvas"></canvas>
+    </div>
+
+    <p id="export-info" class="spec-info"></p>
+
+    <div class="field">
+      <label for="format-select">File format</label>
+      <select id="format-select">
+        <option value="image/jpeg">JPEG</option>
+        <option value="image/png">PNG</option>
+        <option value="image/webp">WebP</option>
+      </select>
+    </div>
+
+    <div class="field" id="quality-field">
+      <label for="quality-range">Quality</label>
+      <input id="quality-range" type="range" min="0.4" max="1" step="0.01" value="0.92" />
+    </div>
+
+    <div class="toolbar">
+      <button id="btn-export-back" class="btn btn-ghost" type="button">Back</button>
+      <button id="btn-download" class="btn btn-primary" type="button">Download Photo</button>
+    </div>
+
+    <div class="sheet-section">
+      <h3>Print sheet</h3>
+      <p class="hint">Tile multiple copies onto a standard print size, ready to take to a photo printer.</p>
+      <div class="field">
+        <label for="sheet-select">Sheet size</label>
+        <select id="sheet-select">
+          <option value="4x6">4x6 in</option>
+          <option value="5x7">5x7 in</option>
+          <option value="a4">A4</option>
+        </select>
+      </div>
+      <button id="btn-download-sheet" class="btn btn-secondary" type="button">Download Print Sheet</button>
+    </div>
+
+    <button id="btn-start-over" class="btn btn-ghost btn-block" type="button">Start Over</button>
+  </section>
+
+</main>
+
+<canvas id="work-canvas" hidden></canvas>
+
+<footer class="app-footer">
+  <p>All processing happens on your device — no photos are uploaded anywhere.</p>
+</footer>
+
+<script src="js/specs.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -111,6 +111,20 @@
 
     <p id="export-info" class="spec-info"></p>
 
+    <div id="compliance-section" class="compliance-section">
+      <h3>Passport photo compliance check</h3>
+      <p id="compliance-status" class="hint">Scanning photo…</p>
+      <ul id="compliance-list" class="compliance-list"></ul>
+      <details class="compliance-manual">
+        <summary>Things you still need to verify yourself</summary>
+        <ul id="compliance-manual-list"></ul>
+      </details>
+      <p class="hint compliance-disclaimer">
+        Automated, on-device estimate only — not an official guarantee of acceptance. Head height and eye position are
+        approximated from face detection, not exact measurements.
+      </p>
+    </div>
+
     <div class="field">
       <label for="format-select">File format</label>
       <select id="format-select">
@@ -155,7 +169,9 @@
   <p>All processing happens on your device — no photos are uploaded anywhere.</p>
 </footer>
 
+<script src="js/vendor/face-api.min.js"></script>
 <script src="js/specs.js"></script>
+<script src="js/compliance.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

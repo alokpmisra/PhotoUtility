@@ -1,16 +1,22 @@
 // Cache the app shell so the converter keeps working offline. All photo
 // processing happens on-device via canvas, so nothing else needs a network
 // round-trip once the shell is cached.
-const CACHE_NAME = 'photo-converter-v1';
+const CACHE_NAME = 'photo-converter-v2';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/styles.css',
   './js/specs.js',
+  './js/compliance.js',
   './js/app.js',
+  './js/vendor/face-api.min.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './models/tiny_face_detector_model-weights_manifest.json',
+  './models/tiny_face_detector_model-shard1',
+  './models/face_landmark_68_tiny_model-weights_manifest.json',
+  './models/face_landmark_68_tiny_model-shard1',
 ];
 
 self.addEventListener('install', (event) => {

@@ -264,6 +264,75 @@ input[type='range'] {
   font-size: 1rem;
 }
 
+.compliance-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--color-surface);
+}
+
+.compliance-section h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.compliance-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.compliance-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.compliance-item.compliance-pass {
+  background: #ecfdf3;
+}
+
+.compliance-item.compliance-warn {
+  background: #fffaeb;
+}
+
+.compliance-item.compliance-fail {
+  background: #fef2f2;
+}
+
+.compliance-icon {
+  flex: none;
+}
+
+.compliance-manual {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.compliance-manual summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.compliance-manual ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.compliance-disclaimer {
+  margin: 0;
+  text-align: left;
+}
+
 .app-footer {
   text-align: center;
   color: var(--color-muted);

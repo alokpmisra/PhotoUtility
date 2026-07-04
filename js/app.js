@@ -393,6 +393,9 @@
   const qualityField = $('quality-field');
   const qualityRange = $('quality-range');
   const sheetSelect = $('sheet-select');
+  const complianceStatus = $('compliance-status');
+  const complianceList = $('compliance-list');
+  const complianceManualList = $('compliance-manual-list');
 
   function renderExport() {
     const s = state.spec;
@@ -418,6 +421,43 @@
     state.exportCanvas = exportCanvas;
     exportInfo.textContent = `${s.name} — ${s.widthPx} × ${s.heightPx}px @ ${s.dpi} DPI`;
     showScreen('export');
+    runComplianceCheck();
+  }
+
+  const STATUS_ICON = { pass: '✅', warn: '⚠️', fail: '❌' };
+
+  function runComplianceCheck() {
+    complianceStatus.textContent = 'Scanning photo…';
+    complianceList.innerHTML = '';
+    complianceManualList.innerHTML = '';
+
+    PhotoCompliance.analyze(state.exportCanvas, state.spec)
+      .then((result) => {
+        complianceStatus.textContent =
+          result.overall === 'pass'
+            ? '✅ Looks good — all automated checks passed.'
+            : result.overall === 'warn'
+            ? '⚠️ Some checks are borderline — review before submitting.'
+            : '❌ One or more checks failed — consider retaking the photo.';
+
+        result.items.forEach((item) => {
+          const li = document.createElement('li');
+          li.className = 'compliance-item compliance-' + item.status;
+          li.innerHTML =
+            `<span class="compliance-icon">${STATUS_ICON[item.status]}</span>` +
+            `<span class="compliance-text"><strong>${item.label}</strong>${item.detail ? ' — ' + item.detail : ''}</span>`;
+          complianceList.appendChild(li);
+        });
+
+        result.manualChecks.forEach((text) => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          complianceManualList.appendChild(li);
+        });
+      })
+      .catch(() => {
+        complianceStatus.textContent = 'Could not run the compliance scan on this device/browser.';
+      });
   }
 
   formatSelect.addEventListener('change', () => {

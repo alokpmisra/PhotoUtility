@@ -15,7 +15,7 @@ into something better than either alone:
   comes back with a plain-language explanation, and misses get a scaffolded
   hint, so the feedback loop actually teaches instead of just grading.
 
-It's a installable Progressive Web App (PWA) with student, parent, and tutor
+It's an installable Progressive Web App (PWA) with student, parent, and tutor
 accounts.
 
 ## How the adaptive mastery engine works
@@ -43,22 +43,25 @@ implementation. In short, per student per skill:
 ## Tech stack
 
 - **Next.js 16** (App Router, TypeScript, Turbopack)
-- **Prisma + SQLite** for data (swap the `DATABASE_URL` and provider in
-  `prisma/schema.prisma` for Postgres/MySQL in production)
+- **Prisma + PostgreSQL** for data
 - **NextAuth v5** (Credentials provider, JWT sessions) for Student / Parent /
   Tutor accounts
 - **Tailwind CSS v4**
 - A hand-rolled service worker + manifest for PWA installability and an
   offline fallback page
 
-## Getting started
+## Getting started (local development)
+
+You need a Postgres database to point at. The fastest option is a free
+[Neon](https://neon.tech) or [Supabase](https://supabase.com) project (copy
+its connection string); a local Postgres works too.
 
 ```bash
 npm install
-cp .env.example .env        # then edit AUTH_SECRET (openssl rand -hex 32)
-npx prisma migrate dev      # creates prisma/dev.db and applies the schema
-npm run db:seed             # loads the Math / Reading / Science curriculum
-npm run db:demo             # creates demo accounts with sample practice history
+cp .env.example .env         # then set DATABASE_URL and AUTH_SECRET (openssl rand -hex 32)
+npx prisma migrate dev       # applies the schema to your database
+npm run db:seed              # loads the Math / Reading / Science curriculum
+npm run db:demo              # creates demo accounts with sample practice history
 npm run dev
 ```
 
@@ -103,6 +106,32 @@ and parent view aren't empty on first login.
   recommendations for both the student and parent views
 - `src/lib/badges.ts` - lightweight engagement badges (first attempt, streaks,
   mastering a skill, mastering an entire subject)
+
+## Deploying to Vercel
+
+The `build` script already runs `prisma generate && prisma migrate deploy`
+before `next build`, so Vercel applies schema migrations automatically on
+every deploy - no manual steps beyond setting two environment variables.
+
+1. **Import the repo**: [vercel.com/new](https://vercel.com/new) → import
+   `alokpmisra/PhotoUtility` → set **Root Directory** to `EduPlatform`.
+2. **Add a Postgres database**: in the project's *Storage* tab, add a
+   **Neon** or **Vercel Postgres** integration (a few clicks, no separate
+   account needed - it provisions a free database and injects a
+   `DATABASE_URL` env var for you automatically).
+3. **Add one more env var**: `AUTH_SECRET` - any random 32+ byte hex string
+   (generate with `openssl rand -hex 32`). Mark it as a secret.
+4. **Deploy**. On the first deploy, migrations run and the database schema
+   is created - but it will be empty. Seed it once via the Vercel CLI or by
+   temporarily adding a build step; the simplest way is:
+   ```bash
+   # from your machine, with the deployed DATABASE_URL in your local .env
+   npm run db:seed
+   npm run db:demo   # optional: adds demo accounts to try immediately
+   ```
+
+No account tokens or secrets need to be shared with anyone else to do this -
+it's all done through the Vercel and database provider's own dashboards.
 
 ## Scripts
 

@@ -43,14 +43,24 @@
       });
     });
 
-    // The mask is a soft grayscale image (white = person). Use its
-    // luminance as an alpha channel so edges blend smoothly instead of a
-    // harsh binary cutout.
+    // The model outputs the mask at a much lower resolution than our
+    // export (its "general" model runs at 256x256), so scaling it up
+    // naively produces a blocky, stair-stepped edge. Request high-quality
+    // smoothing on the upscale, then feather the result with a blur so the
+    // person/background transition is soft rather than jagged — a clean
+    // edge is exactly what passport-photo compositing needs.
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = width;
     maskCanvas.height = height;
     const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
+    maskCtx.imageSmoothingEnabled = true;
+    maskCtx.imageSmoothingQuality = 'high';
+    maskCtx.filter = `blur(${Math.max(1, Math.round(Math.min(width, height) * 0.006))}px)`;
     maskCtx.drawImage(results.segmentationMask, 0, 0, width, height);
+    maskCtx.filter = 'none';
+
+    // Use the mask's luminance as an alpha channel (white = person) so
+    // edges blend smoothly instead of a harsh binary cutout.
     const maskData = maskCtx.getImageData(0, 0, width, height);
     for (let i = 0; i < maskData.data.length; i += 4) {
       maskData.data[i + 3] = maskData.data[i];

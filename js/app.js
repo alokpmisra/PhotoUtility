@@ -560,6 +560,11 @@
           clampPan();
           drawCrop();
           messages.push('Reframed to match target head size and eye position.');
+          if (clampedZoom > 1.6) {
+            messages.push(
+              'This needed a significant zoom-in, so the result may look softer than the original — for the sharpest result, retake with your face filling more of the frame.'
+            );
+          }
         } else {
           messages.push('This size has no defined head-height rule, so framing was left as-is.');
         }

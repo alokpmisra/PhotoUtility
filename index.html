@@ -123,8 +123,9 @@
       </details>
       <p class="hint compliance-disclaimer">
         Automated, on-device estimate only — not an official guarantee of acceptance. Head height and eye position are
-        approximated from face detection, not exact measurements. Auto-Fix can correct framing (crop/zoom/tilt) and
-        brightness/contrast/sharpness, but can't fix things like glasses, expression, or a genuinely blurry shot.
+        approximated from face detection, not exact measurements. Auto-Fix can correct framing (crop/zoom/tilt),
+        replace the background with white, and adjust brightness/contrast/sharpness — but can't fix things like
+        glasses, expression, or a genuinely blurry shot.
       </p>
     </div>
 
@@ -173,8 +174,10 @@
 </footer>
 
 <script src="js/vendor/face-api.min.js"></script>
+<script src="models/selfie_segmentation/selfie_segmentation.js"></script>
 <script src="js/specs.js"></script>
 <script src="js/compliance.js"></script>
+<script src="js/background.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

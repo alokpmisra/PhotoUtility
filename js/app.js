@@ -30,6 +30,7 @@
     stream: null,
     facingMode: 'user',
     exportCanvas: null,
+    backgroundReplaced: false,
   };
 
   // ---------------------------------------------------------------------
@@ -404,6 +405,7 @@
     const img = state.sourceImage;
     const k = s.widthPx / state.canvasW; // CSS-px -> export-px scale factor
 
+    state.backgroundReplaced = false; // a fresh render from source always undoes any prior background fix
     exportCanvas.width = s.widthPx;
     exportCanvas.height = s.heightPx;
     const ctx = exportCanvas.getContext('2d');
@@ -433,7 +435,7 @@
     complianceList.innerHTML = '';
     complianceManualList.innerHTML = '';
 
-    return PhotoCompliance.analyze(state.exportCanvas, state.spec)
+    return PhotoCompliance.analyze(state.exportCanvas, state.spec, { backgroundKnownGood: state.backgroundReplaced })
       .then((result) => {
         complianceStatus.textContent =
           result.overall === 'pass'
@@ -567,6 +569,20 @@
     }
 
     renderExport(true);
+
+    if (PhotoCompliance.needsBackgroundFix(state.exportCanvas)) {
+      autofixStatus.textContent = messages.concat('Removing background…').join(' ');
+      try {
+        const bgFixed = await PhotoBackground.removeBackground(state.exportCanvas);
+        const exportCtx = state.exportCanvas.getContext('2d');
+        exportCtx.clearRect(0, 0, state.exportCanvas.width, state.exportCanvas.height);
+        exportCtx.drawImage(bgFixed, 0, 0);
+        state.backgroundReplaced = true;
+        messages.push('Replaced background with white.');
+      } catch (err) {
+        messages.push('Could not remove the background on this device/browser.');
+      }
+    }
 
     const pixelMessages = PhotoCompliance.applyPixelFixes(state.exportCanvas);
     messages.push(...pixelMessages);

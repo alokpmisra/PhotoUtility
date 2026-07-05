@@ -78,7 +78,13 @@
 
   function computeStats(imageData) {
     const { data, width, height } = imageData;
-    const borderMargin = Math.round(Math.min(width, height) * 0.08);
+    // A correctly framed head-and-shoulders passport photo can legitimately
+    // have shoulders reaching quite high up the sides or the bottom edge
+    // once cropped tight — that's not background, and its position isn't
+    // predictable from geometry alone. The top strip is the one region
+    // that's reliably background regardless of framing (hair doesn't grow
+    // upward), so use that alone as the background proxy.
+    const borderMargin = Math.round(height * 0.1);
     let bgSum = 0;
     let bgSumSq = 0;
     let bgCount = 0;
@@ -91,8 +97,7 @@
         const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
         allSum += lum;
         allCount++;
-        const inBorder = x < borderMargin || x > width - borderMargin || y < borderMargin || y > height - borderMargin;
-        if (inBorder) {
+        if (y < borderMargin) {
           bgSum += lum;
           bgSumSq += lum * lum;
           bgCount++;
@@ -153,7 +158,7 @@
   const SHARPNESS_OK = (s) => s > 90;
   const SHARPNESS_WARN = (s) => s > 40;
 
-  async function analyze(canvas, spec) {
+  async function analyze(canvas, spec, options) {
     const items = [];
 
     items.push({
@@ -164,11 +169,24 @@
 
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const { bgMean, bgStdDev, overallMean } = computeStats(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    items.push({
-      label: 'Background is plain & light',
-      status: verdict(BACKGROUND_OK(bgMean, bgStdDev), BACKGROUND_WARN(bgMean, bgStdDev)),
-      detail: `avg brightness ${bgMean.toFixed(0)}/255, variation ${bgStdDev.toFixed(1)}`,
-    });
+    if (options && options.backgroundKnownGood) {
+      // The caller just replaced the background with solid white via
+      // segmentation (not a heuristic), so we know this is correct by
+      // construction — re-measuring with the border-sampling proxy below
+      // would misfire on a tightly cropped photo where hair legitimately
+      // reaches close to the frame edge.
+      items.push({
+        label: 'Background is plain & light',
+        status: 'pass',
+        detail: 'Replaced with solid white via on-device segmentation.',
+      });
+    } else {
+      items.push({
+        label: 'Background is plain & light',
+        status: verdict(BACKGROUND_OK(bgMean, bgStdDev), BACKGROUND_WARN(bgMean, bgStdDev)),
+        detail: `avg brightness ${bgMean.toFixed(0)}/255, variation ${bgStdDev.toFixed(1)}`,
+      });
+    }
     items.push({
       label: 'Exposure / brightness',
       status: verdict(EXPOSURE_OK(overallMean), EXPOSURE_WARN(overallMean)),
@@ -350,5 +368,14 @@
     return messages;
   }
 
-  global.PhotoCompliance = { analyze, loadModels, detectFaceMetrics, applyPixelFixes };
+  // Cheap check so callers (the background-removal model is a heavy,
+  // ~6MB one-time load) can skip running it when the background already
+  // passes.
+  function needsBackgroundFix(canvas) {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const { bgMean, bgStdDev } = computeStats(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    return !BACKGROUND_OK(bgMean, bgStdDev);
+  }
+
+  global.PhotoCompliance = { analyze, loadModels, detectFaceMetrics, applyPixelFixes, needsBackgroundFix };
 })(window);

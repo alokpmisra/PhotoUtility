@@ -25,14 +25,16 @@ entirely on-device, with no uploads.
   estimate, not an official guarantee of acceptance.
 - **Auto-Fix Photo** — one tap attempts to correct whatever the scan found:
   rotates the source photo to level a tilted head, re-crops/zooms it to hit
-  the target head height, eye-line position, and centering, then adjusts
+  the target head height, eye-line position, and centering, replaces the
+  background with solid white using on-device segmentation, then adjusts
   brightness/contrast and applies mild sharpening. It only touches checks
   that didn't already pass, and re-scans afterward so you can see exactly
-  what changed. It can't fix a background that isn't actually plain/white,
-  and can't recover a genuinely out-of-focus shot — those still need a
-  retake.
+  what changed. It can't recover a genuinely out-of-focus shot, glasses,
+  expression, or head coverings — those still need a retake.
 - **Works offline** — installable as a home-screen app; the app shell,
-  including the face-detection model, is cached by a service worker.
+  including the face-detection and background-segmentation models, is
+  cached by a service worker. The ~6MB segmentation model loads lazily
+  (only when Auto-Fix actually needs it) rather than on every visit.
 
 ## Running locally
 
@@ -61,8 +63,10 @@ css/styles.css         Styles
 js/specs.js            Passport/visa/print size definitions
 js/app.js               Camera, cropper, and export logic
 js/compliance.js        Compliance-check scoring (background, exposure, sharpness, face metrics)
+js/background.js        Background replacement via on-device segmentation
 js/vendor/face-api.min.js  Vendored face-api.js runtime (MIT license)
 models/                 Vendored face-api.js model weights (tiny face detector + 68-point landmarks)
+models/selfie_segmentation/  Vendored MediaPipe selfie-segmentation runtime + model (Apache-2.0)
 manifest.webmanifest    PWA manifest
 service-worker.js       Offline app-shell caching
 icons/                  App icons
@@ -73,5 +77,12 @@ icons/                  App icons
 The compliance check's face detection runs entirely on-device using
 [face-api.js](https://github.com/justadudewhohacks/face-api.js) (MIT
 license) and its bundled `tiny_face_detector` and `face_landmark_68_tiny`
-model weights, vendored under `js/vendor/` and `models/`. No image data is
-ever sent to a server — detection happens locally in the browser.
+model weights, vendored under `js/vendor/` and `models/`.
+
+Background replacement uses Google's
+[MediaPipe Selfie Segmentation](https://github.com/google-ai-edge/mediapipe)
+(Apache-2.0), vendored under `models/selfie_segmentation/`, using its
+"general" model.
+
+No image data is ever sent to a server — all detection and segmentation
+happens locally in the browser.

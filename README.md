@@ -23,6 +23,14 @@ entirely on-device, with no uploads.
   (glasses, expression, eyes open, head coverings, photo age) is listed as a
   manual-verification reminder instead of a pass/fail. It's an on-device
   estimate, not an official guarantee of acceptance.
+- **Auto-Fix Photo** — one tap attempts to correct whatever the scan found:
+  rotates the source photo to level a tilted head, re-crops/zooms it to hit
+  the target head height, eye-line position, and centering, then adjusts
+  brightness/contrast and applies mild sharpening. It only touches checks
+  that didn't already pass, and re-scans afterward so you can see exactly
+  what changed. It can't fix a background that isn't actually plain/white,
+  and can't recover a genuinely out-of-focus shot — those still need a
+  retake.
 - **Works offline** — installable as a home-screen app; the app shell,
   including the face-detection model, is cached by a service worker.
 

@@ -382,7 +382,7 @@
   });
 
   $('btn-crop-back').addEventListener('click', () => showScreen('start'));
-  $('btn-crop-next').addEventListener('click', renderExport);
+  $('btn-crop-next').addEventListener('click', () => renderExport());
 
   // ---------------------------------------------------------------------
   // Step 4: Export screen
@@ -396,8 +396,10 @@
   const complianceStatus = $('compliance-status');
   const complianceList = $('compliance-list');
   const complianceManualList = $('compliance-manual-list');
+  const autofixButton = $('btn-autofix');
+  const autofixStatus = $('autofix-status');
 
-  function renderExport() {
+  function renderExport(skipComplianceCheck) {
     const s = state.spec;
     const img = state.sourceImage;
     const k = s.widthPx / state.canvasW; // CSS-px -> export-px scale factor
@@ -421,7 +423,7 @@
     state.exportCanvas = exportCanvas;
     exportInfo.textContent = `${s.name} — ${s.widthPx} × ${s.heightPx}px @ ${s.dpi} DPI`;
     showScreen('export');
-    runComplianceCheck();
+    if (!skipComplianceCheck) runComplianceCheck();
   }
 
   const STATUS_ICON = { pass: '✅', warn: '⚠️', fail: '❌' };
@@ -431,7 +433,7 @@
     complianceList.innerHTML = '';
     complianceManualList.innerHTML = '';
 
-    PhotoCompliance.analyze(state.exportCanvas, state.spec)
+    return PhotoCompliance.analyze(state.exportCanvas, state.spec)
       .then((result) => {
         complianceStatus.textContent =
           result.overall === 'pass'
@@ -459,6 +461,123 @@
         complianceStatus.textContent = 'Could not run the compliance scan on this device/browser.';
       });
   }
+
+  // Bakes a rotation into a fresh copy of the source photo (white-filled
+  // corners, since ID photo backgrounds are light anyway) so the rest of
+  // the crop/export pipeline can keep treating it as a normal axis-aligned
+  // image — no need to make the interactive cropper rotation-aware.
+  function rotateImage(img, angleDeg) {
+    return new Promise((resolve) => {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.translate(w / 2, h / 2);
+      ctx.rotate((angleDeg * Math.PI) / 180);
+      ctx.translate(-w / 2, -h / 2);
+      ctx.drawImage(img, 0, 0, w, h);
+      const rotated = new Image();
+      rotated.onload = () => resolve(rotated);
+      rotated.src = canvas.toDataURL('image/jpeg', 0.95);
+    });
+  }
+
+  function rotatePoint(x, y, cx, cy, angleDeg) {
+    const theta = (angleDeg * Math.PI) / 180;
+    const dx = x - cx;
+    const dy = y - cy;
+    return {
+      x: cx + dx * Math.cos(theta) - dy * Math.sin(theta),
+      y: cy + dx * Math.sin(theta) + dy * Math.cos(theta),
+    };
+  }
+
+  async function autoFixPhoto() {
+    autofixButton.disabled = true;
+    autofixStatus.textContent = 'Analyzing photo…';
+    const messages = [];
+
+    try {
+      const metrics = await PhotoCompliance.detectFaceMetrics(state.sourceImage);
+
+      if (!metrics) {
+        messages.push('No face detected — could not auto-fix framing. Retake with even lighting, facing the camera directly.');
+      } else {
+        let eyeX = metrics.eyeX;
+        let eyeY = metrics.eyeY;
+        let headHeightPx = metrics.headHeightPx;
+
+        if (Math.abs(metrics.tiltDeg) >= 1) {
+          const cx = state.sourceImage.naturalWidth / 2;
+          const cy = state.sourceImage.naturalHeight / 2;
+          const angle = -metrics.tiltDeg;
+          state.sourceImage = await rotateImage(state.sourceImage, angle);
+
+          const rEye = rotatePoint(metrics.eyeX, metrics.eyeY, cx, cy, angle);
+          const rChin = rotatePoint(metrics.chin.x, metrics.chin.y, cx, cy, angle);
+          // Eyebrow x isn't tracked separately, so reuse eye x as a stand-in
+          // (they're close horizontally) purely to get the rotated eyebrow
+          // y-coordinate — good enough given the head-height estimate below
+          // is already an approximation.
+          const rBrow = rotatePoint(metrics.eyeX, metrics.eyebrowY, cx, cy, angle);
+          eyeX = rEye.x;
+          eyeY = rEye.y;
+          const rBrowToChin = rChin.y - rBrow.y;
+          headHeightPx = rChin.y - (rBrow.y - rBrowToChin * 0.6);
+          messages.push(`Rotated ${Math.abs(metrics.tiltDeg).toFixed(1)}° to level the eyes.`);
+        }
+
+        const spec = state.spec;
+        if (spec.headMinMm) {
+          const targetHeadHeightMm = (spec.headMinMm + spec.headMaxMm) / 2;
+          const targetHeadHeightCss = state.canvasH * (targetHeadHeightMm / spec.heightMm);
+          const idealZoom = targetHeadHeightCss / headHeightPx / state.baseScale;
+          const clampedZoom = clamp(idealZoom, 1, 4);
+          if (Math.abs(clampedZoom - idealZoom) > 0.01) {
+            messages.push(
+              idealZoom < 1
+                ? 'Head is larger than the target size even at the widest crop — for a perfect fit, retake from a bit farther away.'
+                : 'Head is smaller than the target size even at maximum zoom — for a perfect fit, retake a bit closer.'
+            );
+          }
+          state.zoom = clampedZoom;
+          zoomRange.value = clampedZoom;
+          const sFinal = state.baseScale * clampedZoom;
+
+          const targetEyeYCss =
+            spec.id === 'us-passport'
+              ? state.canvasH - (31.75 / spec.heightMm) * state.canvasH // midpoint of 28.6-34.9mm
+              : state.canvasH * 0.45;
+
+          state.panX = state.canvasW / 2 - eyeX * sFinal;
+          state.panY = targetEyeYCss - eyeY * sFinal;
+          clampPan();
+          drawCrop();
+          messages.push('Reframed to match target head size and eye position.');
+        } else {
+          messages.push('This size has no defined head-height rule, so framing was left as-is.');
+        }
+      }
+    } catch (err) {
+      messages.push('Could not analyze the photo for auto-fix.');
+    }
+
+    renderExport(true);
+
+    const pixelMessages = PhotoCompliance.applyPixelFixes(state.exportCanvas);
+    messages.push(...pixelMessages);
+    await runComplianceCheck();
+
+    if (!messages.length) messages.push('No issues found to fix.');
+    autofixStatus.textContent = messages.join(' ');
+    autofixButton.disabled = false;
+  }
+
+  autofixButton.addEventListener('click', autoFixPhoto);
 
   formatSelect.addEventListener('change', () => {
     qualityField.hidden = formatSelect.value === 'image/png';

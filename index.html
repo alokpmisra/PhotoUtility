@@ -115,13 +115,16 @@
       <h3>Passport photo compliance check</h3>
       <p id="compliance-status" class="hint">Scanning photo…</p>
       <ul id="compliance-list" class="compliance-list"></ul>
+      <button id="btn-autofix" class="btn btn-secondary" type="button">Auto-Fix Photo</button>
+      <p id="autofix-status" class="hint"></p>
       <details class="compliance-manual">
         <summary>Things you still need to verify yourself</summary>
         <ul id="compliance-manual-list"></ul>
       </details>
       <p class="hint compliance-disclaimer">
         Automated, on-device estimate only — not an official guarantee of acceptance. Head height and eye position are
-        approximated from face detection, not exact measurements.
+        approximated from face detection, not exact measurements. Auto-Fix can correct framing (crop/zoom/tilt) and
+        brightness/contrast/sharpness, but can't fix things like glasses, expression, or a genuinely blurry shot.
       </p>
     </div>
 

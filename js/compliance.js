@@ -370,11 +370,30 @@
 
   // Cheap check so callers (the background-removal model is a heavy,
   // ~6MB one-time load) can skip running it when the background already
-  // passes.
+  // passes. Deliberately samples more broadly than the top-strip-only
+  // proxy used for the display check above: a false positive here just
+  // costs an unneeded segmentation pass, but a false negative means a
+  // genuinely bad background silently never gets fixed — so this errs
+  // toward triggering rather than toward not annoying a good photo.
   function needsBackgroundFix(canvas) {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    const { bgMean, bgStdDev } = computeStats(ctx.getImageData(0, 0, canvas.width, canvas.height));
-    return !BACKGROUND_OK(bgMean, bgStdDev);
+    const { width, height, data } = canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height);
+    const margin = Math.round(Math.min(width, height) * 0.1);
+    let sum = 0;
+    let sumSq = 0;
+    let count = 0;
+    for (let y = 0; y < height; y += 2) {
+      for (let x = 0; x < width; x += 2) {
+        if (x >= margin && x <= width - margin && y >= margin && y <= height - margin) continue;
+        const i = (y * width + x) * 4;
+        const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        sum += lum;
+        sumSq += lum * lum;
+        count++;
+      }
+    }
+    const mean = sum / count;
+    const stdDev = Math.sqrt(Math.max(0, sumSq / count - mean * mean));
+    return !BACKGROUND_OK(mean, stdDev);
   }
 
   global.PhotoCompliance = { analyze, loadModels, detectFaceMetrics, applyPixelFixes, needsBackgroundFix };

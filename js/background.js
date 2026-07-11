@@ -44,28 +44,55 @@
     });
 
     // The model outputs the mask at a much lower resolution than our
-    // export (its "general" model runs at 256x256), so scaling it up
-    // naively produces a blocky, stair-stepped edge. Request high-quality
-    // smoothing on the upscale, then feather the result with a blur so the
-    // person/background transition is soft rather than jagged — a clean
-    // edge is exactly what passport-photo compositing needs.
+    // export (its "general" model runs at 256x256). Request high-quality
+    // smoothing for the upscale so the edge isn't blocky.
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = width;
     maskCanvas.height = height;
     const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
     maskCtx.imageSmoothingEnabled = true;
     maskCtx.imageSmoothingQuality = 'high';
-    maskCtx.filter = `blur(${Math.max(1, Math.round(Math.min(width, height) * 0.006))}px)`;
     maskCtx.drawImage(results.segmentationMask, 0, 0, width, height);
-    maskCtx.filter = 'none';
 
-    // Use the mask's luminance as an alpha channel (white = person) so
-    // edges blend smoothly instead of a harsh binary cutout.
+    // The model is often under-confident on ambiguous regions like hair,
+    // leaving them at partial confidence rather than committing — composited
+    // straight onto white, that reads as washed-out/translucent instead of
+    // solid hair. Push the mask through a steep S-curve so anything that's
+    // clearly more foreground than not becomes fully opaque (and anything
+    // clearly more background becomes fully transparent), leaving only a
+    // narrow genuine boundary undecided. A blur afterward feathers that
+    // narrow band into a soft (not jagged) edge without re-introducing the
+    // washed-out look across the whole hair region.
     const maskData = maskCtx.getImageData(0, 0, width, height);
+    const steepness = 12;
+    const midpoint = 0.4; // favors foreground, since under-confidence skews low
     for (let i = 0; i < maskData.data.length; i += 4) {
-      maskData.data[i + 3] = maskData.data[i];
+      const x = maskData.data[i] / 255;
+      const y = 1 / (1 + Math.exp(-steepness * (x - midpoint)));
+      const v = Math.round(y * 255);
+      maskData.data[i] = v;
+      maskData.data[i + 1] = v;
+      maskData.data[i + 2] = v;
     }
     maskCtx.putImageData(maskData, 0, 0);
+
+    // Feather with a blur, drawn into a fresh canvas rather than back onto
+    // itself (same-canvas source/dest blur is unreliable across browsers).
+    const feathered = document.createElement('canvas');
+    feathered.width = width;
+    feathered.height = height;
+    const featherCtx = feathered.getContext('2d', { willReadFrequently: true });
+    featherCtx.filter = `blur(${Math.max(1, Math.round(Math.min(width, height) * 0.006))}px)`;
+    featherCtx.drawImage(maskCanvas, 0, 0);
+    featherCtx.filter = 'none';
+
+    // Use the (now curved + feathered) mask's luminance as an alpha
+    // channel so edges blend smoothly instead of a harsh binary cutout.
+    const finalMaskData = featherCtx.getImageData(0, 0, width, height);
+    for (let i = 0; i < finalMaskData.data.length; i += 4) {
+      finalMaskData.data[i + 3] = finalMaskData.data[i];
+    }
+    featherCtx.putImageData(finalMaskData, 0, 0);
 
     const personCanvas = document.createElement('canvas');
     personCanvas.width = width;
@@ -73,7 +100,7 @@
     const personCtx = personCanvas.getContext('2d');
     personCtx.drawImage(source, 0, 0, width, height);
     personCtx.globalCompositeOperation = 'destination-in';
-    personCtx.drawImage(maskCanvas, 0, 0);
+    personCtx.drawImage(feathered, 0, 0);
 
     const outCanvas = document.createElement('canvas');
     outCanvas.width = width;

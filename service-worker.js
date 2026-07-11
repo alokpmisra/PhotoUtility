@@ -1,7 +1,7 @@
 // Cache the app shell so the converter keeps working offline. All photo
 // processing happens on-device via canvas, so nothing else needs a network
 // round-trip once the shell is cached.
-const CACHE_NAME = 'photo-converter-v5';
+const CACHE_NAME = 'photo-converter-v6';
 const APP_SHELL = [
   './',
   './index.html',

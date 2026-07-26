@@ -32,7 +32,7 @@ struct FamilyView: View {
             }
             .buttonStyle(.plain)
         }
-        .navigationTitle("Juniper's Family")
+        .navigationTitle("Juniper's Crew")
     }
 }
 

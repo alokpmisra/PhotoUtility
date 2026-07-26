@@ -8,8 +8,9 @@ and talk with kids. This is an MVP scaffold for a native iOS (SwiftUI) app.
 A talk-to-Juniper experience:
 - Hold a button to talk, Juniper listens, thinks, and replies out loud in a
   funny pitched voice.
-- A "Family" tab introduces Juniper's mom, **Birdy**, and is built to grow —
-  new family members/friends are just data, not new screens.
+- A "Family" tab introduces Juniper's boss, **Birdy** (runs the Jupiter
+  Explorer Corps), and **Uni**, a wacky friend from Uranus — and is built to
+  grow, since new characters are just data, not new screens.
 - Juniper remembers simple facts about the kid (like their name and things
   they like) across sessions, and uses that memory to personalize replies.
 - The AI brain uses Apple's on-device Foundation Models framework (Apple
@@ -61,6 +62,6 @@ Views/           ContentView (tabs), JuniperHomeView (talk to Juniper), FamilyVi
 
 ## Not yet built (waiting on more details)
 - Visual character design/animation (currently a placeholder avatar).
-- Additional family members/friends beyond Juniper and Birdy.
+- Additional family members/friends beyond Juniper, Birdy, and Uni.
 - Parental controls, screen-time limits, content moderation policy specifics.
 - Onboarding flow, App Store assets, COPPA/kids-category compliance review.

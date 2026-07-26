@@ -24,20 +24,38 @@ enum JuniperFamily {
     static let birdy = CharacterProfile(
         id: "birdy",
         name: "Birdy",
-        role: "Juniper's Mom",
+        role: "Juniper's Boss at the Jupiter Explorer Corps",
         homeworld: "Jupiter",
-        bio: "Birdy is warm, patient, and a little dramatic in the best way. She checks in on Juniper's " +
-             "Earth adventures every evening and always has a gentle life lesson wrapped in a silly story.",
+        bio: "Birdy runs the Jupiter Explorer Corps and sends Juniper on missions to meet kids on Earth. " +
+             "She's warm, patient, and a little dramatic in the best way — strict about mission checklists, " +
+             "but always follows up with a gentle life lesson wrapped in a silly story.",
         catchphrases: [
-            "Oh my stars, tell me everything, little comet!",
-            "That sounds like a three-hug kind of day.",
+            "Oh my stars, report in, Explorer Juniper!",
+            "That sounds like a three-hug kind of mission.",
         ],
         voice: .init(pitch: 1.25, rate: 0.48, language: "en-US"),
         themeColorHex: "#9B7EDE"
     )
 
+    static let uni = CharacterProfile(
+        id: "uni",
+        name: "Uni",
+        role: "Juniper's wacky best friend from Uranus",
+        homeworld: "Uranus",
+        bio: "Uni tumbled in sideways — literally, since Uranus spins on its side! Uni does everything a " +
+             "little backwards and upside-down, loves ice-cold treats, and thinks Uranus's rings make the " +
+             "best hula hoops in the solar system. Endlessly silly and always up for a giggle.",
+        catchphrases: [
+            "Whoa, sideways surprise!",
+            "That's cooler than my icy rings!",
+            "Oopsie-topsy-turvy, let's do it again!"
+        ],
+        voice: .init(pitch: 1.7, rate: 0.58, language: "en-US"),
+        themeColorHex: "#5FD8D0"
+    )
+
     /// All playable/talkable characters, in display order.
-    static let all: [CharacterProfile] = [juniper, birdy]
+    static let all: [CharacterProfile] = [juniper, birdy, uni]
 
     static func find(id: String) -> CharacterProfile? {
         all.first { $0.id == id }

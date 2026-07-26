@@ -14,7 +14,7 @@ struct ContentView: View {
             NavigationStack {
                 FamilyView()
             }
-            .tabItem { Label("Family", systemImage: "person.3.fill") }
+            .tabItem { Label("Crew", systemImage: "person.3.fill") }
         }
         .tint(JuniperFamily.juniper.themeColor)
     }
